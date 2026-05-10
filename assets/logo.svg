@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ADD8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00A29C;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background rounded rectangle -->
+  <rect x="4" y="4" width="120" height="120" rx="20" ry="20" fill="#1a1a2e" stroke="url(#grad)" stroke-width="3"/>
+  
+  <!-- Left arrow: Makefile source (orange/gold) -->
+  <polygon points="28,50 62,40 62,60" fill="#F4A261" opacity="0.9"/>
+  
+  <!-- Center arrow: conversion process -->
+  <polygon points="56,64 72,50 72,78" fill="#E9C46A" opacity="0.8"/>
+  
+  <!-- Right target: Go/mage binary (blue/teal) -->
+  <polygon points="66,50 100,40 100,60" fill="#00ADD8" opacity="0.9"/>
+  <polygon points="66,78 100,88 100,68" fill="#00A29C" opacity="0.9"/>
+  
+  <!-- "M" shape overlay representing Makefile/Mage -->
+  <text x="64" y="108" font-family="monospace" font-size="20" font-weight="bold" fill="url(#grad)" text-anchor="middle">mage</text>
+</svg>

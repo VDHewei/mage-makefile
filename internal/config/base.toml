@@ -1,0 +1,73 @@
+# mage-makefile default embedded configuration
+# This file is embedded at build time and serves as the lowest-priority fallback.
+# Users can override settings via:
+#   1. $HOME/.mage_makefile.toml
+#   2. $MAGE_MAKEFILE_CONFIG environment variable
+#   3. ./.mage_makefile.toml (project-local)
+
+[hub]
+# Default hub server URL
+server_url = "https://magego.hub.io"
+# HTTP request timeout in seconds
+timeout = "30s"
+# Max retry attempts for failed requests
+max_retries = 3
+
+[compiler]
+# Default Go SDK version to download when Go is not installed
+go_version = "1.24.3"
+# Custom Go SDK cache directory (empty = default $HOME/.mage_makefile)
+sdk_cache_dir = ""
+# Go module proxy URL
+go_proxy = "https://proxy.golang.org,direct"
+
+[script]
+# Default script engine: go, lua, js
+default_engine = "go"
+# Lua VM max execution time
+lua_timeout = "10s"
+# JS VM max execution time
+js_timeout = "10s"
+
+[runtime]
+# Extra PATH directories for command detection
+extra_paths = []
+# Additional command mapping files
+custom_mappings = []
+
+[convert]
+# 目标过滤：空值=所有目标
+# include_targets = []
+# 排除目标
+# exclude_targets = [".PHONY"]
+# 默认目标（空值=第一个目标）
+# default_target = ""
+
+# 输出样式：standard, verbose, minimal
+output_style = "standard"
+# 添加 Makefile 源码作为注释
+add_comments = true
+# 包含原始 shell 命令作为注释
+add_original = false
+# 按类别分组函数
+group_by_category = false
+
+# 目标平台覆盖（空值=当前系统）
+default_platform = ""
+
+# 自定义命令映射覆盖
+# [[convert.command_map]]
+# unix = "my-custom-tool"
+# windows = "my-tool.exe"
+# macos = "my-tool"
+
+# 自定义目标别名的键
+# [[convert.aliases]]
+# alias = "b"
+# target = "Build"
+
+[log]
+# Log level: debug, info, warn, error
+level = "info"
+# Output format: text, json
+format = "text"
