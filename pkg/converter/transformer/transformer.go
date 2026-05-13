@@ -135,8 +135,11 @@ func (t *Transformer) Transform(m *parser.Makefile) *IR {
 			IsDefault:     isDefault,
 		}
 
+		// Join backslash-continued recipe lines
+		recipes := joinRecipeContinuations(target.Recipes)
+
 		// Transform recipes
-		for _, recipe := range target.Recipes {
+		for _, recipe := range recipes {
 			// Resolve $(shell ...) calls first
 			shellResolved := t.resolveShellCalls(recipe, varMap)
 			// Resolve variables in the recipe
@@ -334,6 +337,43 @@ func (t *Transformer) collectPhonyTargets(targets []*parser.Target) map[string]b
 	return phony
 }
 
+// joinRecipeContinuations merges Makefile recipe lines joined by trailing backslash.
+// For example:
+//
+//	@echo "hello" \
+//	    "world"
+//
+// becomes:
+//
+//	@echo "hello" "world"
+func joinRecipeContinuations(recipes []string) []string {
+	var result []string
+	buf := ""
+	for _, r := range recipes {
+		trimmed := strings.TrimRight(r, " \t\r\n")
+		if buf != "" {
+			// Continuation of previous line
+			if strings.HasSuffix(trimmed, "\\") {
+				buf += " " + strings.TrimSuffix(trimmed, "\\")
+			} else {
+				buf += " " + r
+				result = append(result, buf)
+				buf = ""
+			}
+		} else {
+			if strings.HasSuffix(trimmed, "\\") {
+				buf = strings.TrimSuffix(trimmed, "\\")
+			} else {
+				result = append(result, r)
+			}
+		}
+	}
+	if buf != "" {
+		result = append(result, buf)
+	}
+	return result
+}
+
 // resolveAutoVars replaces automatic Make variables ($@, $<, $^, etc.)
 func (t *Transformer) resolveAutoVars(cmd string, target *parser.Target) string {
 	result := cmd
@@ -430,9 +470,45 @@ func (t *Transformer) transformCommand(cmd string) IRCommand {
 	irCmd.CanUseSh = !ignoreErrors && !strings.Contains(trimmed, "&&") &&
 		!strings.Contains(trimmed, "||") && !strings.Contains(trimmed, "|") &&
 		!strings.Contains(trimmed, ";") && !strings.Contains(trimmed, ">") &&
-		!strings.Contains(trimmed, ">>") && !strings.Contains(trimmed, "<")
+		!strings.Contains(trimmed, ">>") && !strings.Contains(trimmed, "<") &&
+		!hasLeadingEnvVars(args)
 
 	return irCmd
+}
+
+// hasLeadingEnvVars checks if the first argument(s) look like KEY=VALUE env prefixes.
+// Example: "FOX_SKIP_LLAMA=1 cargo fmt" has an env prefix.
+func hasLeadingEnvVars(args []string) bool {
+	seenVar := false
+	for _, arg := range args {
+		if looksLikeEnvVar(arg) {
+			seenVar = true
+			continue
+		}
+		// First non-env-var argument — return true only if preceded by env var(s)
+		return seenVar
+	}
+	return false // only env vars, no command
+}
+
+// looksLikeEnvVar checks if a string matches the pattern KEY=VALUE where KEY is a
+// valid shell variable name (starts with letter/underscore, contains alnum/underscore).
+func looksLikeEnvVar(s string) bool {
+	eq := strings.IndexByte(s, '=')
+	if eq < 1 {
+		return false
+	}
+	// Key must start with letter or underscore
+	if !((s[0] >= 'A' && s[0] <= 'Z') || (s[0] >= 'a' && s[0] <= 'z') || s[0] == '_') {
+		return false
+	}
+	for i := 1; i < eq; i++ {
+		c := s[i]
+		if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 // toFuncName converts a Makefile target name to a valid Go function name.

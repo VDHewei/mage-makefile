@@ -116,36 +116,8 @@ func Help() error {
 func InstallRust() error {
 
 	var cmd *exec.Cmd
-	// Complex command: command -v cargo >/dev/null 2>&1 && \
-	cmd = exec.Command("command", "-v", "cargo", ">/dev/null", "2>&1", "&&")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: (echo "Rust already installed:"; cargo --version) || \
-	cmd = exec.Command("(echo", "Rust already installed:;", "cargo", "--version)", "||")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: (curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-	cmd = exec.Command("(curl", "--proto", "=https", "--tlsv1.2", "-sSf", "https://sh.rustup.rs", "|", "sh", "-s", "--", "-y", "&&")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: . /.cargo/env && cargo --version && \
-	cmd = exec.Command(".", "/.cargo/env", "&&", "cargo", "--version", "&&")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: echo Rust installed. Run: source ~/.cargo/env && make build)
-	cmd = exec.Command("echo", "Rust", "installed.", "Run:", "source", "~/.cargo/env", "&&", "make", "build)")
+	// Complex command: command -v cargo >/dev/null 2>&1 &&  (echo "Rust already installed:"; cargo --version) ||  (curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &&  . /.cargo/env && cargo --version &&  echo "Rust installed. Run: source ~/.cargo/env && make build")
+	cmd = exec.Command("sh", "-c", "command -v cargo >/dev/null 2>&1 &&  (echo \"Rust already installed:\"; cargo --version) ||  (curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &&  . /.cargo/env && cargo --version &&  echo \"Rust installed. Run: source ~/.cargo/env && make build\")")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -164,48 +136,11 @@ func DownloadModel() error {
 	if err := sh.Run("echo", "Downloading", "Qwen3.5-0.8B-Q4_K_M.gguf", "from", "unsloth/Qwen3.5-0.8B-GGUF..."); err != nil {
 		return err
 	}
-	if err := sh.Run("docker", "run", "--rm"); err != nil {
-		return err
-	}
-	// Complex command: e PIP_ROOT_USER_ACTION=ignore \
-	cmd = exec.Command("e", "PIP_ROOT_USER_ACTION=ignore")
+	// Complex command: docker run --rm  -e PIP_ROOT_USER_ACTION=ignore  -v "/models:/data"  -w /data  python:3.11-slim  sh -c "pip install --quiet huggingface_hub &&  python -c \"from huggingface_hub import hf_hub_download;  hf_hub_download(repo_id='unsloth/Qwen3.5-0.8B-GGUF', filename='Qwen3.5-0.8B-Q4_K_M.gguf', local_dir='.')\""
+	cmd = exec.Command("sh", "-c", "docker run --rm  -e PIP_ROOT_USER_ACTION=ignore  -v \"/models:/data\"  -w /data  python:3.11-slim  sh -c \"pip install --quiet huggingface_hub &&  python -c \\\"from huggingface_hub import hf_hub_download;  hf_hub_download(repo_id='unsloth/Qwen3.5-0.8B-GGUF', filename='Qwen3.5-0.8B-Q4_K_M.gguf', local_dir='.')\\\"\"")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: v "/models:/data" \
-	cmd = exec.Command("v", "/models:/data")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: w /data \
-	cmd = exec.Command("w", "/data")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	if err := sh.Run("python:3.11-slim"); err != nil {
-		return err
-	}
-	// Complex command: sh -c "pip install --quiet huggingface_hub && \
-	cmd = exec.Command("sh", "-c", "pip install --quiet huggingface_hub && ")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: python -c \"from huggingface_hub import hf_hub_download; \
-	cmd = exec.Command("python", "-c", "\"from", "huggingface_hub", "import", "hf_hub_download;")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	if err := sh.Run("hf_hub_download(repo_id=unsloth/Qwen3.5-0.8B-GGUF,", "filename=Qwen3.5-0.8B-Q4_K_M.gguf,", "local_dir=.)\""); err != nil {
 		return err
 	}
 	if err := sh.Run("echo", "Model", "saved", "to", "models/Qwen3.5-0.8B-Q4_K_M.gguf"); err != nil {
@@ -226,13 +161,26 @@ func Check() error {
 // Ci runs ci
 func Ci() error {
 
-	if err := sh.Run("FOX_SKIP_LLAMA=1", "cargo", "fmt", "--all", "--", "--check"); err != nil {
+	var cmd *exec.Cmd
+	// Complex command: FOX_SKIP_LLAMA=1 cargo fmt --all -- --check
+	cmd = exec.Command("sh", "-c", "FOX_SKIP_LLAMA=1 cargo fmt --all -- --check")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
 		return err
 	}
-	if err := sh.Run("FOX_SKIP_LLAMA=1", "cargo", "clippy", "--all-targets", "--features", "test-helpers", "--", "-D", "warnings"); err != nil {
+	// Complex command: FOX_SKIP_LLAMA=1 cargo clippy --all-targets --features test-helpers -- -D warnings
+	cmd = exec.Command("sh", "-c", "FOX_SKIP_LLAMA=1 cargo clippy --all-targets --features test-helpers -- -D warnings")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
 		return err
 	}
-	if err := sh.Run("FOX_SKIP_LLAMA=1", "cargo", "test", "--all", "--features", "test-helpers"); err != nil {
+	// Complex command: FOX_SKIP_LLAMA=1 cargo test --all --features test-helpers
+	cmd = exec.Command("sh", "-c", "FOX_SKIP_LLAMA=1 cargo test --all --features test-helpers")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
 		return err
 	}
 	return nil
@@ -251,15 +199,8 @@ func Setup() error {
 func Build() error {
 
 	var cmd *exec.Cmd
-	// Complex command: command -v cargo >/dev/null 2>&1 || \
-	cmd = exec.Command("command", "-v", "cargo", ">/dev/null", "2>&1", "||")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: (echo "Rust not found. Run: make install-rust" && exit 1)
-	cmd = exec.Command("(echo", "Rust not found. Run: make install-rust", "&&", "exit", "1)")
+	// Complex command: command -v cargo >/dev/null 2>&1 ||  (echo "Rust not found. Run: make install-rust" && exit 1)
+	cmd = exec.Command("sh", "-c", "command -v cargo >/dev/null 2>&1 ||  (echo \"Rust not found. Run: make install-rust\" && exit 1)")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -276,63 +217,14 @@ func Run() error {
 
 	mg.Deps(mg.F(Build))
 	var cmd *exec.Cmd
-	// Complex command: test -f "models/Qwen3.5-0.8B-Q4_K_M.gguf" || \
-	cmd = exec.Command("test", "-f", "models/Qwen3.5-0.8B-Q4_K_M.gguf", "||")
+	// Complex command: test -f "models/Qwen3.5-0.8B-Q4_K_M.gguf" ||  (echo "Model not found at $(MODEL_PATH). Run: make download-model" && exit 1)
+	cmd = exec.Command("sh", "-c", "test -f \"models/Qwen3.5-0.8B-Q4_K_M.gguf\" ||  (echo \"Model not found at $(MODEL_PATH). Run: make download-model\" && exit 1)")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-	// Complex command: (echo "Model not found at models/Qwen3.5-0.8B-Q4_K_M.gguf. Run: make download-model" && exit 1)
-	cmd = exec.Command("(echo", "Model not found at models/Qwen3.5-0.8B-Q4_K_M.gguf. Run: make download-model", "&&", "exit", "1)")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	if err := sh.Run("./target/release/fox"); err != nil {
-		return err
-	}
-	// Complex command: -model-path models/Qwen3.5-0.8B-Q4_K_M.gguf \
-	cmd = exec.Command("-model-path", "models/Qwen3.5-0.8B-Q4_K_M.gguf")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -host 0.0.0.0 \
-	cmd = exec.Command("-host", "0.0.0.0")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -port 8080 \
-	cmd = exec.Command("-port", "8080")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -max-context-len 4096 \
-	cmd = exec.Command("-max-context-len", "4096")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -gpu-memory-fraction 0.85 \
-	cmd = exec.Command("-gpu-memory-fraction", "0.85")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -max-batch-size 32
-	cmd = exec.Command("-max-batch-size", "32")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := sh.Run("./target/release/fox", "--model-path", "models/Qwen3.5-0.8B-Q4_K_M.gguf", "--host", "0.0.0.0", "--port", "8080", "--max-context-len", "4096", "--gpu-memory-fraction", "0.85", "--max-batch-size", "32"); err != nil {
 		return err
 	}
 	return nil
@@ -343,60 +235,15 @@ func Dev() error {
 
 	mg.Deps(mg.F(Build))
 	var cmd *exec.Cmd
-	// Complex command: test -f "models/Qwen3.5-0.8B-Q4_K_M.gguf" || \
-	cmd = exec.Command("test", "-f", "models/Qwen3.5-0.8B-Q4_K_M.gguf", "||")
+	// Complex command: test -f "models/Qwen3.5-0.8B-Q4_K_M.gguf" ||  (echo "Model not found at $(MODEL_PATH). Run: make download-model" && exit 1)
+	cmd = exec.Command("sh", "-c", "test -f \"models/Qwen3.5-0.8B-Q4_K_M.gguf\" ||  (echo \"Model not found at $(MODEL_PATH). Run: make download-model\" && exit 1)")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-	// Complex command: (echo "Model not found at models/Qwen3.5-0.8B-Q4_K_M.gguf. Run: make download-model" && exit 1)
-	cmd = exec.Command("(echo", "Model not found at models/Qwen3.5-0.8B-Q4_K_M.gguf. Run: make download-model", "&&", "exit", "1)")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	if err := sh.Run("RUST_LOG=debug", "./target/release/fox"); err != nil {
-		return err
-	}
-	// Complex command: -model-path models/Qwen3.5-0.8B-Q4_K_M.gguf \
-	cmd = exec.Command("-model-path", "models/Qwen3.5-0.8B-Q4_K_M.gguf")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -host 0.0.0.0 \
-	cmd = exec.Command("-host", "0.0.0.0")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -port 8080 \
-	cmd = exec.Command("-port", "8080")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -max-context-len 4096 \
-	cmd = exec.Command("-max-context-len", "4096")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -gpu-memory-fraction 0.85 \
-	cmd = exec.Command("-gpu-memory-fraction", "0.85")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -max-batch-size 32
-	cmd = exec.Command("-max-batch-size", "32")
+	// Complex command: RUST_LOG=debug ./target/release/fox  --model-path models/Qwen3.5-0.8B-Q4_K_M.gguf  --host 0.0.0.0  --port 8080  --max-context-len 4096  --gpu-memory-fraction 0.85  --max-batch-size 32
+	cmd = exec.Command("sh", "-c", "RUST_LOG=debug ./target/release/fox  --model-path models/Qwen3.5-0.8B-Q4_K_M.gguf  --host 0.0.0.0  --port 8080  --max-context-len 4096  --gpu-memory-fraction 0.85  --max-batch-size 32")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -418,53 +265,10 @@ func Test() error {
 func Bench() error {
 
 	mg.Deps(mg.F(Build))
-	var cmd *exec.Cmd
 	if err := sh.Run("echo", "Running", "benchmark", "against", "0.0.0.0:8080..."); err != nil {
 		return err
 	}
-	if err := sh.Run("./target/release/fox-bench"); err != nil {
-		return err
-	}
-	// Complex command: -url http://0.0.0.0:8080 \
-	cmd = exec.Command("-url", "http://0.0.0.0:8080")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -model Qwen3.5-0.8B-Q4_K_M.gguf \
-	cmd = exec.Command("-model", "Qwen3.5-0.8B-Q4_K_M.gguf")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -concurrency 4 \
-	cmd = exec.Command("-concurrency", "4")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -requests 50 \
-	cmd = exec.Command("-requests", "50")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -max-tokens 128 \
-	cmd = exec.Command("-max-tokens", "128")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -prompt "Write a short paragraph about the Rust programming language."
-	cmd = exec.Command("-prompt", "Write a short paragraph about the Rust programming language.")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := sh.Run("./target/release/fox-bench", "--url", "http://0.0.0.0:8080", "--model", "Qwen3.5-0.8B-Q4_K_M.gguf", "--concurrency", "4", "--requests", "50", "--max-tokens", "128", "--prompt", "Write a short paragraph about the Rust programming language."); err != nil {
 		return err
 	}
 	return nil

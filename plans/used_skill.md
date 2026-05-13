@@ -9,7 +9,10 @@ This document records skills used during the development of mage-makefile.
 |---|----------------------|-------------|----------------|-------------|
 | 1 | (none yet) | Phase 1: Setup | Manual implementation | 2026-05-10 |
 | 2 | (none yet) | Phase 3: CLI Integration | Manual implementation | 2026-05-10 |
-| 3 | (none yet) | Phase 4: Makefile Compat | Manual implementation | 2026-05-10 |
+| 3 | karpathy-guidelines | Phase 4: Makefile Compat | Code review and refactoring: kept mapping.go structure clean, avoided overcomplicating installer logic, verified cross-platform command coverage | 2026-05-10 |
+| 4 | karpathy-guidelines | Phase 4: Makefile Compat | Code review — kept mapping.go structure clean, avoided overcomplicating installer logic | 2026-05-10 |
+| 5 | karpathy-guidelines | magefile.go creation | Surgical changes: created minimal magefile, avoided over-engineering | 2026-05-12 |
+| 6 | (none) | README + Logo | Manual implementation — bilingual documentation design, SVG logo redesign | 2026-05-12 |
 
 ---
 

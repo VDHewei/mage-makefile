@@ -14,7 +14,7 @@ const GOHOSTOS = "windows"
 // GOPATH - defined from Makefile variable
 const GOPATH = "C:\\Users\\wei\\go"
 // VERSION - defined from Makefile variable
-const VERSION = ""
+const VERSION = "81258cd"
 // _DEFAULT_GOAL - defined from Makefile variable
 const _DEFAULT_GOAL = "help"
 // Git_Bash - defined from Makefile variable
@@ -51,22 +51,7 @@ func Init() error {
 // Config runs config
 func Config() error {
 
-	var cmd *exec.Cmd
-	if err := sh.Run("protoc", "--proto_path=./internal"); err != nil {
-		return err
-	}
-	// Complex command: -proto_path=./third_party \
-	cmd = exec.Command("-proto_path=./third_party")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -go_out=paths=source_relative:./internal \
-	cmd = exec.Command("-go_out=paths=source_relative:./internal")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := sh.Run("protoc", "--proto_path=./internal", "--proto_path=./third_party", "--go_out=paths=source_relative:./internal"); err != nil {
 		return err
 	}
 	return nil
@@ -75,43 +60,7 @@ func Config() error {
 // Api runs api
 func Api() error {
 
-	var cmd *exec.Cmd
-	if err := sh.Run("protoc", "--proto_path=./api"); err != nil {
-		return err
-	}
-	// Complex command: -proto_path=./third_party \
-	cmd = exec.Command("-proto_path=./third_party")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -go_out=paths=source_relative:./api \
-	cmd = exec.Command("-go_out=paths=source_relative:./api")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -go-http_out=paths=source_relative:./api \
-	cmd = exec.Command("-go-http_out=paths=source_relative:./api")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -go-grpc_out=paths=source_relative:./api \
-	cmd = exec.Command("-go-grpc_out=paths=source_relative:./api")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: -openapi_out=fq_schema_naming=true,default_response=false:. \
-	cmd = exec.Command("-openapi_out=fq_schema_naming=true,default_response=false:.")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := sh.Run("protoc", "--proto_path=./api", "--proto_path=./third_party", "--go_out=paths=source_relative:./api", "--go-http_out=paths=source_relative:./api", "--go-grpc_out=paths=source_relative:./api", "--openapi_out=fq_schema_naming=true,default_response=false:."); err != nil {
 		return err
 	}
 	return nil
@@ -121,8 +70,8 @@ func Api() error {
 func Build() error {
 
 	var cmd *exec.Cmd
-	// Complex command: mkdir -p bin/ && go build -ldflags -X main.Version= -o ./bin/ ./...
-	cmd = exec.Command("mkdir", "-p", "bin/", "&&", "go", "build", "-ldflags", "-X", "main.Version=", "-o", "./bin/", "./...")
+	// Complex command: mkdir -p bin/ && go build -ldflags -X main.Version=81258cd -o ./bin/ ./...
+	cmd = exec.Command("sh", "-c", "mkdir -p bin/ && go build -ldflags -X main.Version=81258cd -o ./bin/ ./...")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -177,47 +126,11 @@ func Help() error {
 	if err := sh.Run("echo", "Targets:"); err != nil {
 		return err
 	}
-	if err := sh.Run("/^[a-zA-Z-_0-9]+:/", "{"); err != nil {
-		return err
-	}
-	// Complex command: helpMessage = match(lastLine, /^# (.*)/); \
-	cmd = exec.Command("helpMessage", "=", "match(lastLine,", "/^#", "(.*)/);")
+	// Complex command:  /^[a-zA-Z\-\_0-9]+:/ {  helpMessage = match(lastLine, /^# (.*)/);  if (helpMessage) {  helpCommand = substr($$1, 0, index($$1, ":"));  helpMessage = substr(lastLine, RSTART + 2, RLENGTH);  printf "\033[36m%-22s\033[0m %s\n", helpCommand,helpMessage;  }  }  { lastLine = $$0 }
+	cmd = exec.Command("sh", "-c", " /^[a-zA-Z\\-\\_0-9]+:/ {  helpMessage = match(lastLine, /^# (.*)/);  if (helpMessage) {  helpCommand = substr($$1, 0, index($$1, \":\"));  helpMessage = substr(lastLine, RSTART + 2, RLENGTH);  printf \"\\033[36m%-22s\\033[0m %s\\n\", helpCommand,helpMessage;  }  }  { lastLine = $$0 }")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return err
-	}
-	if err := sh.Run("if", "(helpMessage)", "{"); err != nil {
-		return err
-	}
-	// Complex command: helpCommand = substr($$1, 0, index($$1, ":")); \
-	cmd = exec.Command("helpCommand", "=", "substr($$1,", "0,", "index($$1,", ":));")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: helpMessage = substr(lastLine, RSTART + 2, RLENGTH); \
-	cmd = exec.Command("helpMessage", "=", "substr(lastLine,", "RSTART", "+", "2,", "RLENGTH);")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Complex command: printf "\033[36m%-22s\033[0m %s\n", helpCommand,helpMessage; \
-	cmd = exec.Command("printf", "033[36m%-22s033[0m %sn,", "helpCommand,helpMessage;")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	if err := sh.Run("}"); err != nil {
-		return err
-	}
-	if err := sh.Run("}"); err != nil {
-		return err
-	}
-	if err := sh.Run("{", "lastLine", "=", "$$0", "}"); err != nil {
 		return err
 	}
 	return nil

@@ -259,12 +259,11 @@ func (g *Generator) generateCommand(cmd transformer.IRCommand) string {
 		sb.WriteString("\t\treturn err\n")
 		sb.WriteString("\t}\n")
 	} else if cmd.Transformed != "" {
-		// Use os/exec for complex commands
+		// Use os/exec with sh -c for complex shell commands
 		sb.WriteString("\t// Complex command: " + cmd.Transformed + "\n")
-		sb.WriteString(fmt.Sprintf("\tcmd = exec.Command(%q", cmd.Args[0]))
-		for _, arg := range cmd.Args[1:] {
-			sb.WriteString(fmt.Sprintf(", %q", arg))
-		}
+		sb.WriteString(fmt.Sprintf("\tcmd = exec.Command(%q", "sh"))
+		sb.WriteString(fmt.Sprintf(", %q", "-c"))
+		sb.WriteString(fmt.Sprintf(", %q", cmd.Transformed))
 		sb.WriteString(")\n")
 		sb.WriteString("\tcmd.Stdout = os.Stdout\n")
 		sb.WriteString("\tcmd.Stderr = os.Stderr\n")

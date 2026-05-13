@@ -112,10 +112,14 @@ build:
 	code, err := gen.Generate()
 	require.NoError(t, err)
 
-	// Complex commands (with &&) use exec.Command
+	// Complex commands (with &&) use exec.Command with sh -c
 	assert.Contains(t, code, "exec.Command")
+	assert.Contains(t, code, `"sh"`)
+	assert.Contains(t, code, `"-c"`)
 	assert.Contains(t, code, "cmd.Stdout = os.Stdout")
 	assert.Contains(t, code, "cmd.Stderr = os.Stderr")
+	// The command should be the full shell command string, not split
+	assert.Contains(t, code, `go build -o bin/app ./... && echo "done"`)
 }
 
 func TestGenerateEmptyMakefile(t *testing.T) {

@@ -1,24 +1,112 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#00ADD8;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#00A29C;stop-opacity:1" />
+    <!-- Go blue gradient -->
+    <linearGradient id="goGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ADD8"/>
+      <stop offset="100%" style="stop-color:#007D9C"/>
     </linearGradient>
+    <!-- Makefile amber gradient -->
+    <linearGradient id="mfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F4A261"/>
+      <stop offset="100%" style="stop-color:#E76F51"/>
+    </linearGradient>
+    <!-- Cross-platform rainbow -->
+    <linearGradient id="crossGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2EC866"/>
+      <stop offset="50%" style="stop-color:#00ADD8"/>
+      <stop offset="100%" style="stop-color:#F4A261"/>
+    </linearGradient>
+    <!-- Glow filter -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  
-  <!-- Background rounded rectangle -->
-  <rect x="4" y="4" width="120" height="120" rx="20" ry="20" fill="#1a1a2e" stroke="url(#grad)" stroke-width="3"/>
-  
-  <!-- Left arrow: Makefile source (orange/gold) -->
-  <polygon points="28,50 62,40 62,60" fill="#F4A261" opacity="0.9"/>
-  
-  <!-- Center arrow: conversion process -->
-  <polygon points="56,64 72,50 72,78" fill="#E9C46A" opacity="0.8"/>
-  
-  <!-- Right target: Go/mage binary (blue/teal) -->
-  <polygon points="66,50 100,40 100,60" fill="#00ADD8" opacity="0.9"/>
-  <polygon points="66,78 100,88 100,68" fill="#00A29C" opacity="0.9"/>
-  
-  <!-- "M" shape overlay representing Makefile/Mage -->
-  <text x="64" y="108" font-family="monospace" font-size="20" font-weight="bold" fill="url(#grad)" text-anchor="middle">mage</text>
+
+  <!-- Background: dark card -->
+  <rect x="8" y="8" width="240" height="240" rx="32" ry="32" fill="#1a1a2e" stroke="url(#goGrad)" stroke-width="2.5"/>
+
+  <!-- ===== Left side: Makefile document icon ===== -->
+  <!-- Document body -->
+  <rect x="36" y="52" width="48" height="60" rx="4" ry="4" fill="#2a2a4e" stroke="url(#mfGrad)" stroke-width="1.5"/>
+  <!-- Text lines on document -->
+  <rect x="42" y="62" width="28" height="3" rx="1.5" fill="#F4A261" opacity="0.8"/>
+  <rect x="42" y="70" width="36" height="3" rx="1.5" fill="#E9C46A" opacity="0.7"/>
+  <rect x="42" y="78" width="20" height="3" rx="1.5" fill="#F4A261" opacity="0.6"/>
+  <rect x="42" y="88" width="32" height="3" rx="1.5" fill="#E9C46A" opacity="0.7"/>
+  <rect x="42" y="96" width="16" height="3" rx="1.5" fill="#F4A261" opacity="0.6"/>
+  <!-- Target dot -->
+  <circle cx="60" cy="128" r="4" fill="#F4A261" opacity="0.9"/>
+
+  <!-- ===== Center: Arrow / Conversion ===== -->
+  <!-- Main arrow shaft -->
+  <line x1="92" y1="108" x2="140" y2="108" stroke="url(#crossGrad)" stroke-width="3" stroke-linecap="round"/>
+  <!-- Arrowhead -->
+  <polygon points="140,98 158,108 140,118" fill="url(#crossGrad)" opacity="0.95"/>
+  <!-- Sparkle dots along the arrow -->
+  <circle cx="100" cy="104" r="2" fill="#00ADD8" opacity="0.7"/>
+  <circle cx="115" cy="112" r="1.5" fill="#2EC866" opacity="0.7"/>
+  <circle cx="128" cy="104" r="1.8" fill="#F4A261" opacity="0.7"/>
+
+  <!-- ===== Right side: Go gopher / Mage ===== -->
+  <!-- Go gopher body (simplified) -->
+  <rect x="155" y="64" width="50" height="36" rx="6" ry="6" fill="url(#goGrad)" opacity="0.9"/>
+  <!-- Go gopher head -->
+  <ellipse cx="180" cy="58" rx="14" ry="10" fill="#00ADD8" opacity="0.85"/>
+  <!-- Go gopher eyes -->
+  <circle cx="176" cy="56" r="2" fill="white"/>
+  <circle cx="184" cy="56" r="2" fill="white"/>
+  <!-- Gopher smile -->
+  <rect x="175" y="61" width="10" height="2" rx="1" fill="white" opacity="0.7"/>
+  <!-- Go gopher arms -->
+  <rect x="164" y="72" width="8" height="3" rx="1.5" fill="#007D9C"/>
+  <rect x="188" y="72" width="8" height="3" rx="1.5" fill="#007D9C"/>
+
+  <!-- ===== Bottom: Cross-platform icons ===== -->
+  <!-- Windows -->
+  <g opacity="0.8">
+    <rect x="52" y="155" width="4" height="12" fill="#2EC866" rx="1"/>
+    <rect x="58" y="155" width="4" height="12" fill="#2EC866" rx="1"/>
+    <rect x="52" y="155" width="10" height="5" fill="#2EC866" rx="1"/>
+    <rect x="52" y="163" width="10" height="4" fill="#2EC866" rx="1"/>
+  </g>
+
+  <!-- Plus -->
+  <text x="72" y="172" font-family="monospace" font-size="16" fill="#E9C46A" text-anchor="middle" font-weight="bold">+</text>
+
+  <!-- macOS -->
+  <g opacity="0.8">
+    <ellipse cx="86" cy="164" rx="6" ry="4" fill="#00ADD8" transform="rotate(-30 86 164)"/>
+    <line x1="86" y1="160" x2="86" y2="155" stroke="#00ADD8" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- Plus -->
+  <text x="100" y="172" font-family="monospace" font-size="16" fill="#E9C46A" text-anchor="middle" font-weight="bold">+</text>
+
+  <!-- Linux/Tux -->
+  <g opacity="0.8">
+    <ellipse cx="115" cy="164" rx="5" ry="6" fill="#F4A261"/>
+    <line x1="115" y1="158" x2="115" y2="170" stroke="#2a2a2e" stroke-width="1" opacity="0.5"/>
+    <circle cx="113" cy="162" r="1" fill="#2a2a2e" opacity="0.5"/>
+    <circle cx="117" cy="162" r="1" fill="#2a2a2e" opacity="0.5"/>
+  </g>
+
+  <!-- ===== Bottom-right: "mage" logo text ===== -->
+  <text x="210" y="175" font-family="monospace, 'Courier New'" font-size="22" font-weight="bold"
+        fill="url(#goGrad)" text-anchor="middle" filter="url(#glow)">mage</text>
+
+  <!-- ===== "makego" subtitle ===== -->
+  <text x="128" y="208" font-family="monospace, 'Courier New'" font-size="13" font-weight="bold"
+        fill="#8a8aae" text-anchor="middle" letter-spacing="3">MAKEGO</text>
+
+  <!-- Subtitle line -->
+  <line x1="68" y1="218" x2="188" y2="218" stroke="#3a3a5e" stroke-width="1" stroke-linecap="round"/>
+
+  <!-- ===== Bottom tagline ===== -->
+  <text x="128" y="232" font-family="sans-serif" font-size="9" fill="#5a5a7e" text-anchor="middle" letter-spacing="1.5">
+    Makefile → Go • Cross-Platform
+  </text>
 </svg>
