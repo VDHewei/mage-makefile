@@ -310,6 +310,6 @@ MIT License. See [LICENSE](LICENSE).
 | Phase 3 | CLI Integration / CLI 集成 | Completed / 已完成 |
 | Phase 4 | Compatibility Detection / 兼容性检测 | Completed / 已完成 |
 | Phase 5 | Interactive Conversion / 交互式转换 | Completed / 已完成 |
-| Phase 6 | Cross-Compilation / 交叉编译 | Planned / 规划中 |
+| Phase 6 | Cross-Compilation / 交叉编译 | Completed / 已完成 |
 | Phase 7 | API Service (Hub) / API 服务 | Planned / 规划中 |
 | Phase 8 | Hub Integration / Hub 集成 | Planned / 规划中 |
