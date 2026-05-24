@@ -314,3 +314,114 @@ func TestCLI_DetectWithReport(t *testing.T) {
 	assert.Contains(t, output, "Target OS")
 	assert.Contains(t, output, "Total")
 }
+
+// == Phase 5+: Script Engine CLI Tests ==
+
+func TestCLI_ConvertWithScriptGo(t *testing.T) {
+	dir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	defer os.Chdir(oldDir)
+	os.Chdir(dir)
+
+	makefileContent := "build:\n\techo \"hello\"\n"
+	if err := os.WriteFile("Makefile", []byte(makefileContent), 0644); err != nil {
+		t.Fatalf("write Makefile: %v", err)
+	}
+
+	outputFile := filepath.Join(dir, "magefile.go")
+	output := captureOutput(t, []string{
+		"convert", "Makefile",
+		"--output", outputFile,
+		"--script", "go",
+	})
+
+	assert.Contains(t, output, "magefile.go")
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	assert.Contains(t, string(data), "package main")
+}
+
+func TestCLI_ConvertWithScriptLua(t *testing.T) {
+	dir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	defer os.Chdir(oldDir)
+	os.Chdir(dir)
+
+	makefileContent := "build:\n\techo \"hello\"\n"
+	if err := os.WriteFile("Makefile", []byte(makefileContent), 0644); err != nil {
+		t.Fatalf("write Makefile: %v", err)
+	}
+
+	outputFile := filepath.Join(dir, "magefile.go")
+	output := captureOutput(t, []string{
+		"convert", "Makefile",
+		"--output", outputFile,
+		"--script", "lua",
+	})
+
+	assert.Contains(t, output, "magefile.go")
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	assert.Contains(t, string(data), "package main")
+}
+
+func TestCLI_ConvertWithScriptJs(t *testing.T) {
+	dir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	defer os.Chdir(oldDir)
+	os.Chdir(dir)
+
+	makefileContent := "build:\n\techo \"hello\"\n"
+	if err := os.WriteFile("Makefile", []byte(makefileContent), 0644); err != nil {
+		t.Fatalf("write Makefile: %v", err)
+	}
+
+	outputFile := filepath.Join(dir, "magefile.go")
+	output := captureOutput(t, []string{
+		"convert", "Makefile",
+		"--output", outputFile,
+		"--script", "js",
+	})
+
+	assert.Contains(t, output, "magefile.go")
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	assert.Contains(t, string(data), "package main")
+}
+
+func TestCLI_ConvertWithWindowsPlatform(t *testing.T) {
+	dir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	defer os.Chdir(oldDir)
+	os.Chdir(dir)
+
+	// Use a complex command (&&) to trigger the exec.Command path with cross-platform shell
+	makefileContent := "build:\n\trm -rf bin/ && echo \"done\"\n"
+	if err := os.WriteFile("Makefile", []byte(makefileContent), 0644); err != nil {
+		t.Fatalf("write Makefile: %v", err)
+	}
+
+	outputFile := filepath.Join(dir, "magefile.go")
+	captureOutput(t, []string{
+		"convert", "Makefile",
+		"--output", outputFile,
+		"--platform", "windows",
+	})
+
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+
+	content := string(data)
+	// Windows cross-platform generation should include runtime.GOOS check for complex commands
+	assert.Contains(t, content, "runtime.GOOS")
+	assert.Contains(t, content, "\"cmd\"")
+	assert.Contains(t, content, "\"/C\"")
+}

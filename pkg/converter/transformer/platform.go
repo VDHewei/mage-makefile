@@ -47,6 +47,10 @@ func (pm *PlatformMapping) MapCommand(cmd string) string {
 
 	baseCmd := strings.ToLower(parts[0])
 	if mapped, ok := pm.commandMap[baseCmd]; ok {
+		if mapped == "" {
+			// 无 Windows 等效命令，保留原命令（Windows 上会报错，但不会产生乱码）
+			return cmd
+		}
 		parts[0] = mapped
 		return strings.Join(parts, " ")
 	}
@@ -55,6 +59,10 @@ func (pm *PlatformMapping) MapCommand(cmd string) string {
 }
 
 // unixToWindows maps common Unix commands to their Windows equivalents.
+// 命令映射：将 Unix 命令映射到 Windows 等效命令。
+// 对于仅有词法差异的命令（rm→del, cp→copy）直接替换命令名。
+// 对于参数语法完全不同的命令（sed, awk, head, tail 等）不在此处映射——
+// 它们由 runtime.CompatChecker 在兼容性检测层处理，提供 PowerShell 替代方案。
 var unixToWindows = map[string]string{
 	// File operations
 	"rm":     "del",
@@ -67,7 +75,6 @@ var unixToWindows = map[string]string{
 	"md":     "mkdir",
 	"ln":     "mklink",
 	"chmod":  "icacls",
-	"chown":  "", // no direct equivalent
 	"which":  "where",
 	"pwd":    "cd",
 	"echo":   "echo",
@@ -83,34 +90,16 @@ var unixToWindows = map[string]string{
 	"wget":  "curl",
 	"curl":  "curl",
 	"ping":  "ping",
-	"nc":    "", // no direct equivalent
 
-	// Text
+	// Text — commands with simple name-only mapping
 	"grep":  "findstr",
-	"sed":   "",   // no direct equivalent
-	"awk":   "",   // no direct equivalent
 	"sort":  "sort",
-	"uniq":  "",   // no direct equivalent
 	"wc":    "find /c",
-	"head":  "",   // no direct equivalent
-	"tail":  "",   // no direct equivalent
-	"tr":    "",   // no direct equivalent
-	"cut":   "",   // no direct equivalent
 
 	// Shell builtins (approximations)
 	"source": "call",
 	"export": "set",
 	"unset":  "set",
-
-	// Package managers (approximations)
-	"apt":   "",
-	"apt-get": "",
-	"yum":   "",
-	"brew":  "",
-
-	// Permissions
-	"sudo":   "",
-	"su":     "",
 }
 
 // AutoVarMap translates automatic Make variables to their descriptions.

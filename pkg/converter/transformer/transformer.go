@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/VDHewei/mage-makefile/pkg/converter/parser"
+	"github.com/VDHewei/mage-makefile/pkg/script"
 )
 
 // IR represents the intermediate representation of a Makefile
@@ -47,7 +48,8 @@ type IRCommand struct {
 
 // Transformer transforms a Makefile AST into IR.
 type Transformer struct {
-	platform *PlatformMapping
+	platform     *PlatformMapping
+	scriptEngine script.ScriptEngine // 可选的脚本引擎，用于自定义 shell 命令转换
 }
 
 // NewTransformer creates a new Transformer with the default (current) platform.
@@ -61,6 +63,14 @@ func NewTransformer() *Transformer {
 func NewTransformerWithPlatform(targetOS string) *Transformer {
 	return &Transformer{
 		platform: NewPlatformMapping(targetOS),
+	}
+}
+
+// NewTransformerWithEngine 创建带有指定脚本引擎和平台的 Transformer。
+func NewTransformerWithEngine(targetOS string, engine script.ScriptEngine) *Transformer {
+	return &Transformer{
+		platform:      NewPlatformMapping(targetOS),
+		scriptEngine:  engine,
 	}
 }
 
@@ -204,7 +214,15 @@ func (t *Transformer) resolveShellCalls(s string, varMap map[string]string) stri
 		// Step 2: Execute the expanded command
 		output := execShellCommand(expandedCmd)
 
-		// Step 3: Replace $(shell ...) with output
+		// Step 3 (可选): 如果配置了脚本引擎，通过脚本引擎转换输出内容
+		if t.scriptEngine != nil {
+			transformed, err := t.scriptEngine.Execute(output, varMap)
+			if err == nil && transformed != "" {
+				output = transformed
+			}
+		}
+
+		// Step 4: Replace $(shell ...) with output
 		result = result[:idx] + output + result[closeIdx+1:]
 	}
 	return result

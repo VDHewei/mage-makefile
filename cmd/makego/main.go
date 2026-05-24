@@ -16,6 +16,7 @@ import (
 	"github.com/VDHewei/mage-makefile/pkg/converter/parser"
 	"github.com/VDHewei/mage-makefile/pkg/converter/transformer"
 	"github.com/VDHewei/mage-makefile/pkg/runtime"
+	"github.com/VDHewei/mage-makefile/pkg/script"
 )
 
 var (
@@ -247,14 +248,15 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 根据配置或 CLI 标志选择目标平台
+	// 根据配置或 CLI 标志选择目标平台和脚本引擎
+	engine := newScriptEngine(scriptEngine)
 	var tr *transformer.Transformer
 	if targetPlatform != "" {
-		tr = transformer.NewTransformerWithPlatform(targetPlatform)
+		tr = transformer.NewTransformerWithEngine(targetPlatform, engine)
 	} else if cfg != nil && cfg.Convert.DefaultPlatform != "" {
-		tr = transformer.NewTransformerWithPlatform(cfg.Convert.DefaultPlatform)
+		tr = transformer.NewTransformerWithEngine(cfg.Convert.DefaultPlatform, engine)
 	} else {
-		tr = transformer.NewTransformerWithPlatform("")
+		tr = transformer.NewTransformerWithEngine("", engine)
 	}
 	ir := tr.Transform(makefileAST)
 
@@ -610,4 +612,19 @@ func orDefault(val, defaultVal string) string {
 		return defaultVal
 	}
 	return val
+}
+
+// newScriptEngine 根据 --script 标志创建对应的脚本引擎。
+// 返回 nil 表示不使用脚本引擎（使用默认的 shell 执行方式）。
+func newScriptEngine(engineType string) script.ScriptEngine {
+	switch engineType {
+	case "lua":
+		return script.NewLuaEngine(0)
+	case "js":
+		return script.NewJSEngine(0)
+	case "go":
+		return script.NewGoEngine()
+	default:
+		return nil
+	}
 }

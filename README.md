@@ -6,6 +6,10 @@
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://go.dev)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
+<p align="center">
+  <img src="assets/logo.svg" alt="makego logo" width="400">
+</p>
+
 ---
 
 ## Features / 功能特性

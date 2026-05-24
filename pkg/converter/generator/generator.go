@@ -123,8 +123,10 @@ func (g *Generator) collectImports() []string {
 	}
 
 	// If we need os/exec, we also need "os" for os.Stdout/os.Stderr
+	// and "runtime" for cross-platform shell selection (runtime.GOOS)
 	if needed["os/exec"] {
 		needed["os"] = true
+		needed["runtime"] = true
 	}
 
 	// Always include mg for dependencies between targets
@@ -259,12 +261,19 @@ func (g *Generator) generateCommand(cmd transformer.IRCommand) string {
 		sb.WriteString("\t\treturn err\n")
 		sb.WriteString("\t}\n")
 	} else if cmd.Transformed != "" {
-		// Use os/exec with sh -c for complex shell commands
+		// 跨平台 shell 执行：Windows 使用 cmd /C，Unix 使用 sh -c
 		sb.WriteString("\t// Complex command: " + cmd.Transformed + "\n")
-		sb.WriteString(fmt.Sprintf("\tcmd = exec.Command(%q", "sh"))
+		sb.WriteString("\tif runtime.GOOS == \"windows\" {\n")
+		sb.WriteString(fmt.Sprintf("\t\tcmd = exec.Command(%q", "cmd"))
+		sb.WriteString(fmt.Sprintf(", %q", "/C"))
+		sb.WriteString(fmt.Sprintf(", %q", cmd.Transformed))
+		sb.WriteString(")\n")
+		sb.WriteString("\t} else {\n")
+		sb.WriteString(fmt.Sprintf("\t\tcmd = exec.Command(%q", "sh"))
 		sb.WriteString(fmt.Sprintf(", %q", "-c"))
 		sb.WriteString(fmt.Sprintf(", %q", cmd.Transformed))
 		sb.WriteString(")\n")
+		sb.WriteString("\t}\n")
 		sb.WriteString("\tcmd.Stdout = os.Stdout\n")
 		sb.WriteString("\tcmd.Stderr = os.Stderr\n")
 		sb.WriteString("\tif err := cmd.Run(); err != nil {\n")
