@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/VDHewei/mage-makefile/pkg/compiler"
 	"github.com/VDHewei/mage-makefile/pkg/config"
 	"github.com/VDHewei/mage-makefile/pkg/converter/generator"
 	"github.com/VDHewei/mage-makefile/pkg/converter/interactive"
@@ -354,15 +355,34 @@ func runCompile(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if targetOS != "" || targetArch != "" {
-		fmt.Printf("Cross-compiling %s -> %s (%s/%s)\n", magefile, output, targetOS, targetArch)
-		fmt.Println("Cross-compilation: will be implemented in Phase 6")
-	} else {
-		fmt.Printf("Compiling %s -> %s (native)\n", magefile, output)
-		fmt.Println("Native compilation: will be implemented in Phase 6")
+	c := compiler.NewNativeCompiler()
+	if sdkCache != "" {
+		c.SetSDKCacheDir(sdkCache)
 	}
 
-	return nil
+	// Bootstrap: ensure Go SDK is available
+	if bootstrap {
+		if err := c.Bootstrap(); err != nil {
+			return fmt.Errorf("bootstrap: %w", err)
+		}
+		fmt.Println("Go SDK verified")
+	} else {
+		status, err := c.Detect()
+		if err != nil {
+			return fmt.Errorf("detect Go: %w", err)
+		}
+		if !status.Installed && !status.Cached {
+			fmt.Println("Warning: Go not found. Use --bootstrap to download SDK.")
+		}
+	}
+
+	// Perform compilation
+	if targetOS != "" || targetArch != "" {
+		fmt.Printf("Cross-compiling %s -> %s (%s/%s)\n", magefile, output, targetOS, targetArch)
+		return c.Cross(magefile, targetOS, targetArch, output)
+	}
+	fmt.Printf("Compiling %s -> %s (native)\n", magefile, output)
+	return c.Native(magefile, output)
 }
 
 // runDetect handles the detect subcommand.

@@ -78,10 +78,6 @@ func (c *NativeCompiler) compile(magefilePath string, output string, goos, goarc
 go 1.21
 
 require github.com/magefile/mage v1.15.0
-
-require (
-	github.com/magefile/mage v1.15.0
-)
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(modContent), 0644); err != nil {
 		return fmt.Errorf("failed to create go.mod: %w", err)

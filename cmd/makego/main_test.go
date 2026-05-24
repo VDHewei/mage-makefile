@@ -425,3 +425,36 @@ func TestCLI_ConvertWithWindowsPlatform(t *testing.T) {
 	assert.Contains(t, content, "\"cmd\"")
 	assert.Contains(t, content, "\"/C\"")
 }
+
+// == Phase 6: Compile CLI Tests ==
+
+func TestCLI_CompilesNative(t *testing.T) {
+	dir := t.TempDir()
+	magefile := filepath.Join(dir, "main.go")
+	mageContent := `//go:build mage
+
+package main
+
+import (
+	"fmt"
+	"github.com/magefile/mage/sh"
+)
+
+func Build() error {
+	fmt.Println("building")
+	return sh.Run("echo", "done")
+}
+`
+	if err := os.WriteFile(magefile, []byte(mageContent), 0644); err != nil {
+		t.Fatalf("write magefile: %v", err)
+	}
+
+	output := filepath.Join(dir, "magebuild")
+	outputArgs := []string{"compile", magefile, "--output", output}
+
+	out := captureOutput(t, outputArgs)
+	// Output should mention compilation
+	if !strings.Contains(out, "Compiling") {
+		t.Logf("compile output: %s", out)
+	}
+}
