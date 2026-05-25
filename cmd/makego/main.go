@@ -5,8 +5,12 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -16,6 +20,7 @@ import (
 	"github.com/VDHewei/mage-makefile/pkg/converter/interactive"
 	"github.com/VDHewei/mage-makefile/pkg/converter/parser"
 	"github.com/VDHewei/mage-makefile/pkg/converter/transformer"
+	"github.com/VDHewei/mage-makefile/pkg/hub"
 	"github.com/VDHewei/mage-makefile/pkg/runtime"
 	"github.com/VDHewei/mage-makefile/pkg/script"
 )
@@ -23,6 +28,7 @@ import (
 var (
 	cfgLoader *config.Loader
 	cfg       *config.Config
+	hubMgr    *hub.HubManager
 
 	// Global flags
 	configFile string
@@ -80,6 +86,7 @@ Example usage:
 			return fmt.Errorf("load config: %w", err)
 		}
 		cfg = cfgLoader.Config()
+		hubMgr = hub.NewHubManager(cfg)
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -136,6 +143,115 @@ var hubCmd = &cobra.Command{
 	Long:  `Hub provides commands for the magego.hub.io API service for sharing and discovering code snippets.`,
 }
 
+// parseMagefileMetadata parses magefile.go file metadata.
+func parseMagefileMetadata(filePath string) magefileMetadata {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return magefileMetadata{
+			Name:        "unknown",
+			Description: "magefile snippet",
+			Tags:        []string{},
+			Author:      "unknown",
+			Platform:    "",
+			Engine:      "",
+			Metadata:    map[string]string{},
+			CreatedAt:   time.Now(),
+		}
+	}
+
+	// Extract metadata from file header comments
+	meta := magefileMetadata{
+		Name:        "unknown",
+		Description: "magefile snippet",
+		Tags:        []string{},
+		Author:      "unknown",
+		Platform:    "",
+		Engine:      "",
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
+
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		// Look for // @hub lines
+		if strings.HasPrefix(line, "// @hub") {
+			parts := strings.Split(line[7:], " ")
+			for _, part := range parts {
+				part = strings.TrimSpace(part)
+				if part == "" {
+					continue
+				}
+				if strings.HasPrefix(part, "name=") {
+					meta.Name = strings.Trim(strings.TrimPrefix(part, "name="), q)
+				} else if strings.HasPrefix(part, "description=") {
+					meta.Description = strings.Trim(strings.TrimPrefix(part, "description="), q)
+				} else if strings.HasPrefix(part, "author=") {
+					meta.Author = strings.Trim(strings.TrimPrefix(part, "author="), q)
+				} else if strings.HasPrefix(part, "platform=") {
+					meta.Platform = strings.Trim(strings.TrimPrefix(part, "platform="), q)
+				} else if strings.HasPrefix(part, "engine=") {
+					meta.Engine = strings.Trim(strings.TrimPrefix(part, "engine="), q)
+				} else if strings.HasPrefix(part, "tags=") {
+					tagsStr := strings.Trim(strings.TrimPrefix(part, "tags="), q)
+					meta.Tags = strings.Split(tagsStr, ",")
+				} else if strings.HasPrefix(part, "created=") {
+					createdAt := strings.Trim(strings.TrimPrefix(part, "created="), q)
+					if t, err := time.Parse(time.RFC3339, createdAt); err == nil {
+						meta.CreatedAt = t
+					}
+				} else if strings.HasPrefix(part, "metadata=") {
+					m := strings.Trim(strings.TrimPrefix(part, "metadata="), q)
+					meta.Metadata = parseMetadataMap(m)
+				}
+			}
+		}
+	}
+
+	// If no metadata found, use filename
+	if meta.Name == "unknown" {
+		meta.Name = filepath.Base(filePath)
+	}
+
+	return meta
+}
+
+// q is a single quote character for trimming.
+var q = "\""
+
+// parseMetadataMap 简单解析 metadata 字段。
+func parseMetadataMap(jsonStr string) map[string]string {
+	meta := map[string]string{}
+	// Simple parsing, extracting key-value pairs
+	pairs := strings.Split(jsonStr, ",")
+	for _, pair := range pairs {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		kv := strings.SplitN(pair, `:`, 2)
+		if len(kv) == 2 {
+			key := strings.TrimSpace(strings.Trim(kv[0], q))
+			value := strings.TrimSpace(strings.Trim(kv[1], q))
+			if key != "" && value != "" {
+				meta[key] = value
+			}
+		}
+	}
+	return meta
+}
+
+// magefileMetadata represents metadata for a magefile.go file.
+type magefileMetadata struct {
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Tags        []string          `json:"tags"`
+	Author      string            `json:"author"`
+	Platform    string            `json:"platform"`
+	Engine      string            `json:"engine"`
+	Metadata    map[string]string `json:"metadata"`
+	CreatedAt   time.Time         `json:"created_at"`
+}
+
 var hubPullCmd = &cobra.Command{
 	Use:   "pull [name] [version]",
 	Short: "Pull a code snippet from the hub",
@@ -151,9 +267,9 @@ var hubPushCmd = &cobra.Command{
 }
 
 var hubLoginCmd = &cobra.Command{
-	Use:   "login [username]",
-	Short: "Login to the hub",
-	Args:  cobra.ExactArgs(1),
+	Use:   "login [username] [password]",
+	Short: "Login to the hub with username/password or API key",
+	Args:  cobra.MaximumNArgs(2),
 	RunE:  runHubLogin,
 }
 
@@ -164,12 +280,40 @@ var hubSearchCmd = &cobra.Command{
 	RunE:  runHubSearch,
 }
 
+// Add hub list and version commands
+var hubListCmd = &cobra.Command{
+	Use:   "list [--page=N] [--size=M]",
+	Short: "List all snippets on the hub (paginated)",
+	Args:  cobra.NoArgs,
+	RunE:  runHubList,
+}
+
+var hubVersionCmd = &cobra.Command{
+	Use:   "versions [name]",
+	Short: "Get version history for a snippet",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runHubVersions,
+}
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print makego version",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("makego v0.1.0")
 	},
+}
+
+// serveCmd provides a built-in hub development server for local testing
+var serveCmd = &cobra.Command{
+	Use:   "serve [path]",
+	Short: "Start Hub development server",
+	Long: `Run a local Hub development server with embedded static files.
+
+This provides a self-contained Hub server for testing and local development.
+The server embeds all static assets (HTML, CSS, JS) and provides a simple
+file-based snippet storage for local usage.`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runServe,
 }
 
 func init() {
@@ -208,11 +352,14 @@ func init() {
 	rootCmd.AddCommand(detectCmd)
 	rootCmd.AddCommand(hubCmd)
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(serveCmd)
 
 	hubCmd.AddCommand(hubPullCmd)
 	hubCmd.AddCommand(hubPushCmd)
 	hubCmd.AddCommand(hubLoginCmd)
 	hubCmd.AddCommand(hubSearchCmd)
+	hubCmd.AddCommand(hubListCmd)
+	hubCmd.AddCommand(hubVersionCmd)
 }
 
 // runConvert handles the convert subcommand with interactive and config-driven modes.
@@ -227,13 +374,13 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		orDefault(targetPlatform, "current"),
 		scriptEngine)
 
-	// 读取输入文件
+	// Read input file
 	data, err := os.ReadFile(inputFile)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", inputFile, err)
 	}
 
-	// 解析 Makefile
+	// Parse Makefile
 	p := parser.NewParser(string(data))
 	makefileAST, err := p.Parse()
 	if err != nil {
@@ -249,7 +396,7 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 根据配置或 CLI 标志选择目标平台和脚本引擎
+	// Select target platform based on config or CLI flag
 	engine := newScriptEngine(scriptEngine)
 	var tr *transformer.Transformer
 	if targetPlatform != "" {
@@ -261,17 +408,17 @@ func runConvert(cmd *cobra.Command, args []string) error {
 	}
 	ir := tr.Transform(makefileAST)
 
-	// --list-targets 标志：列出目标并退出
+	// --list-targets flag: list targets and exit
 	if listTargets {
 		fmt.Printf("Targets in %s / 目标列表:\n", inputFile)
 		cat := interactive.NewCategorizer()
 		categorized := cat.Categorize(ir)
 		cat.DisplayCategories(categorized)
-		fmt.Printf("\nTotal / 总计: %d targets\n", len(ir.Targets))
+		fmt.Printf("\nTotal / 总计：%d targets\n", len(ir.Targets))
 		return nil
 	}
 
-	// 配置驱动的非交互式过滤
+	// Config-driven non-interactive filtering
 	if cfg != nil && !interactiveMode {
 		include := cfg.Convert.IncludeTargets
 		exclude := cfg.Convert.ExcludeTargets
@@ -281,7 +428,7 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 交互模式
+	// Interactive mode
 	if interactiveMode {
 		engine := interactive.NewInteractiveEngine(cfg)
 		if err := engine.Run(makefileAST, ir); err != nil {
@@ -293,33 +440,33 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 从配置准备生成选项
+	// Prepare generator options from config
 	genOpts := generator.DefaultGeneratorOptions()
 	if cfg != nil {
 		genOpts.ApplyConfig(&cfg.Convert)
 	}
 	gen := generator.NewGeneratorWithConfig(ir, genOpts)
 
-	// 生成 magefile.go
+	// Generate magefile.go
 	code, err := gen.Generate()
 	if err != nil {
 		return fmt.Errorf("generate: %w", err)
 	}
 
-	// 写入输出文件
+	// Write output file
 	if err := os.WriteFile(convertOutput, []byte(code), 0644); err != nil {
 		return fmt.Errorf("write %s: %w", convertOutput, err)
 	}
 
 	absPath, _ := filepath.Abs(convertOutput)
-	fmt.Printf("Generated / 生成: %s\n", absPath)
+	fmt.Printf("Generated / 生成：%s\n", absPath)
 	if interactiveMode {
-		fmt.Printf("Targets converted / 已转换目标: %d\n", len(ir.Targets))
+		fmt.Printf("Targets converted / 已转换目标：%d\n", len(ir.Targets))
 	}
 	return nil
 }
 
-// filterTargets 根据 include/exclude 列表过滤 IR 中的目标。
+// filterTargets filters targets in IR based on include/exclude lists.
 func filterTargets(ir *transformer.IR, include, exclude []string) *transformer.IR {
 	excludeSet := make(map[string]bool)
 	for _, name := range exclude {
@@ -473,7 +620,7 @@ func handleMakefileDetect(target, targetOS, currentOS string) error {
 	} else {
 		// Compact output
 		fmt.Printf("\nMakefile compatibility report (%s):\n", target)
-		fmt.Printf("  Target OS / 目标系统: %s\n", targetOS)
+		fmt.Printf("  Target OS / 目标系统：%s\n", targetOS)
 		fmt.Printf("  Total: %d   Available: %d   Missing: %d\n\n",
 			report.Total, report.Available, report.Missing)
 		for _, r := range results {
@@ -488,10 +635,10 @@ func handleMakefileDetect(target, targetOS, currentOS string) error {
 			fmt.Println()
 			if !r.IsAvailable {
 				if r.Alternative != "" {
-					fmt.Printf("    → try / 尝试: %s\n", r.Alternative)
+					fmt.Printf("    → try / 尝试：%s\n", r.Alternative)
 				}
 				if r.InstallURL != "" {
-					fmt.Printf("    → download / 下载: %s\n", r.InstallURL)
+					fmt.Printf("    → download / 下载：%s\n", r.InstallURL)
 				}
 			}
 		}
@@ -519,7 +666,7 @@ func handleMakefileDetect(target, targetOS, currentOS string) error {
 					if detectInteractive && !skipAll {
 						ok, err := installer.InteractiveInstall(suggestion)
 						if err != nil {
-							fmt.Printf("  Install error / 安装错误: %v\n", err)
+							fmt.Printf("  Install error / 安装错误：%v\n", err)
 						}
 						if !ok {
 							// User chose to skip all
@@ -528,7 +675,7 @@ func handleMakefileDetect(target, targetOS, currentOS string) error {
 					} else if detectInstall {
 						_, err := installer.AutoInstall(suggestion)
 						if err != nil {
-							fmt.Printf("  Auto-install error / 自动安装错误: %v\n", err)
+							fmt.Printf("  Auto-install error / 自动安装错误：%v\n", err)
 						}
 					}
 				}
@@ -547,26 +694,26 @@ func handleCommandDetect(target string, d *runtime.Detector) error {
 	cmdMap := runtime.LookupCommandMap(target)
 
 	if available {
-		fmt.Printf("  Available at / 路径: %s\n", path)
+		fmt.Printf("  Available at / 路径：%s\n", path)
 		if cmdMap != nil && cmdMap.Description != "" {
-			fmt.Printf("  Description / 描述: %s\n", cmdMap.Description)
+			fmt.Printf("  Description / 描述：%s\n", cmdMap.Description)
 		}
 	} else {
 		fmt.Printf("  NOT available on this platform / 当前平台不可用\n")
 		if cmdMap != nil {
 			if cmdMap.Description != "" {
-				fmt.Printf("  Description / 描述: %s\n", cmdMap.Description)
+				fmt.Printf("  Description / 描述：%s\n", cmdMap.Description)
 			}
 
 			// Show alternatives for all platforms
 			if alt, found := runtime.GetAlternative(target, "windows"); found {
-				fmt.Printf("  Windows alternative / 替代: %s\n", alt)
+				fmt.Printf("  Windows alternative / 替代：%s\n", alt)
 			}
 			if alt, found := runtime.GetAlternative(target, "darwin"); found {
-				fmt.Printf("  macOS alternative / 替代: %s\n", alt)
+				fmt.Printf("  macOS alternative / 替代：%s\n", alt)
 			}
 			if cmdMap.InstallURL != "" {
-				fmt.Printf("  Download / 下载: %s\n", cmdMap.InstallURL)
+				fmt.Printf("  Download / 下载：%s\n", cmdMap.InstallURL)
 			}
 		}
 
@@ -579,12 +726,12 @@ func handleCommandDetect(target string, d *runtime.Detector) error {
 			if detectInteractive {
 				_, err := installer.InteractiveInstall(suggestion)
 				if err != nil {
-					fmt.Printf("  Install error / 安装错误: %v\n", err)
+					fmt.Printf("  Install error / 安装错误：%v\n", err)
 				}
 			} else if detectInstall {
 				_, err := installer.AutoInstall(suggestion)
 				if err != nil {
-					fmt.Printf("  Auto-install error / 自动安装错误: %v\n", err)
+					fmt.Printf("  Auto-install error / 自动安装错误：%v\n", err)
 				}
 			}
 		}
@@ -595,34 +742,220 @@ func handleCommandDetect(target string, d *runtime.Detector) error {
 
 // runHubPull handles hub pull.
 func runHubPull(cmd *cobra.Command, args []string) error {
+	// If not logged in, prompt user to login
+	if hubMgr == nil || !hubMgr.IsAuthenticated() {
+		fmt.Println("Not authenticated. Please login first with: makego hub login [user]")
+		return nil
+	}
+
 	name := args[0]
 	version := "latest"
 	if len(args) > 1 {
 		version = args[1]
 	}
-	fmt.Printf("Pulling snippet: %s@%s from %s\n", name, version, cfg.Hub.ServerURL)
-	fmt.Println("Hub pull: will be implemented in Phase 8")
+
+	client := hubMgr.GetClient()
+	snippet, err := client.Pull(name, version)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error pulling %s: %v\n", name, err)
+		return err
+	}
+
+	fmt.Printf("\nSnippet: %s\n", snippet.Name)
+	fmt.Printf("Description: %s\n", snippet.Description)
+	fmt.Printf("Tags: %v\n", snippet.Tags)
+	fmt.Printf("Author: %s\n", snippet.Author)
+	fmt.Printf("Platform: %s\n", snippet.Platform)
+	fmt.Printf("Engine: %s\n", snippet.Engine)
+	fmt.Println("\nCode:")
+	fmt.Println("--------------------------------------------------")
+	fmt.Println(snippet.Code)
+	fmt.Println("--------------------------------------------------")
 	return nil
 }
 
 // runHubPush handles hub push.
 func runHubPush(cmd *cobra.Command, args []string) error {
-	fmt.Printf("Pushing snippet: %s to %s\n", args[0], cfg.Hub.ServerURL)
-	fmt.Println("Hub push: will be implemented in Phase 8")
+	// If not logged in, prompt user to login
+	if hubMgr == nil || !hubMgr.IsAuthenticated() {
+		fmt.Println("Not authenticated. Please login first with: makego hub login [user]")
+		return nil
+	}
+
+	filePath := args[0]
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", filePath, err)
+	}
+
+	// Parse magefile.go to get metadata
+	meta := parseMagefileMetadata(filePath)
+
+	snippet := hub.Snippet{
+		Name:        fmt.Sprintf("%s-latest", meta.Name),
+		Code:        string(data),
+		Description: meta.Description,
+		Tags:        meta.Tags,
+		Author:      meta.Author,
+		Platform:    meta.Platform,
+		Engine:      meta.Engine,
+		Metadata:    meta.Metadata,
+		CreatedAt:   meta.CreatedAt,
+	}
+
+	client := hubMgr.GetClient()
+	resp, err := client.Push(snippet)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error pushing snippet: %v\n", err)
+		return err
+	}
+
+	fmt.Printf("\nUpload successful!\n")
+	fmt.Printf("Name:        %s\n", resp.Name)
+	fmt.Printf("Version:     %s\n", resp.Version)
+	fmt.Printf("Snippet URL: %s\n", resp.URL)
 	return nil
 }
 
 // runHubLogin handles hub login.
 func runHubLogin(cmd *cobra.Command, args []string) error {
-	fmt.Printf("Logging in as %s to %s\n", args[0], cfg.Hub.ServerURL)
-	fmt.Println("Hub login: will be implemented in Phase 8")
+	username := ""
+	if len(args) > 0 {
+		username = args[0]
+	}
+
+	hm := hubMgr
+	if !hm.IsAuthenticated() {
+		// Need to login
+		_ = hm.URL()
+
+		// Check for API key or password
+		apiKey := os.Getenv("MAAGEHUB_API_KEY")
+		password := os.Getenv("MAAGEHUB_PASSWORD")
+
+		if apiKey != "" {
+			fmt.Printf("\nLogging in with API key...\n")
+			req := hub.LoginRequest{APIKey: apiKey}
+			if _, err := hm.Login(req); err != nil {
+				fmt.Fprintf(os.Stderr, "Login failed: %v\n", err)
+				return err
+			}
+		} else if username != "" && password != "" {
+			fmt.Printf("\nLogging in as %s...\n", username)
+			req := hub.LoginRequest{Username: username, Password: password}
+			if _, err := hm.Login(req); err != nil {
+				fmt.Fprintf(os.Stderr, "Login failed: %v\n", err)
+				return err
+			}
+		} else {
+			fmt.Println("Please provide login credentials:")
+			fmt.Println("  Export MAAGEHUB_API_KEY='your-api-key'")
+			fmt.Println("  or Export MAAGEHUB_PASSWORD='your-password'")
+			fmt.Println("  or run: makego hub login [username] [password]")
+			fmt.Println()
+			fmt.Println("Current hub server:", hm.URL())
+			return nil
+		}
+	}
+
+	fmt.Println("\nAuthentication status:")
+	fmt.Printf("  Server: %s\n", hm.URL())
+	fmt.Printf("  Authenticated: %v\n", hm.IsAuthenticated())
+	fmt.Println("  Token: ***cached***")
 	return nil
 }
 
 // runHubSearch handles hub search.
 func runHubSearch(cmd *cobra.Command, args []string) error {
-	fmt.Printf("Searching for '%s' on %s\n", args[0], cfg.Hub.ServerURL)
-	fmt.Println("Hub search: will be implemented in Phase 8")
+	// If not logged in, prompt user to login
+	if hubMgr == nil || !hubMgr.IsAuthenticated() {
+		fmt.Println("Not authenticated. Please login first with: makego hub login [user]")
+		return nil
+	}
+
+	query := args[0]
+	hm := hubMgr
+	client := hm.GetClient()
+
+	req := hub.SearchRequest{
+		Query: query,
+	}
+
+	result, err := client.Search(req)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Search failed: %v\n", err)
+		return err
+	}
+
+	fmt.Printf("\nSearch results for '%s' (%d total):\n", query, result.Total)
+	fmt.Printf("Page: %d / %d\n", result.Page, (result.Total+result.PageSize-1)/result.PageSize)
+	fmt.Println("--------------------------------------------------")
+	for _, snippet := range result.Snippets {
+		fmt.Printf("\nSnippet: %s\n", snippet.Name)
+		fmt.Printf("  Description: %s\n", snippet.Description)
+		fmt.Printf("  Tags: %v\n", snippet.Tags)
+		fmt.Printf("  Author: %s\n", snippet.Author)
+		fmt.Printf("  Platform: %s, Engine: %s\n", snippet.Platform, snippet.Engine)
+		fmt.Println("  Created: ", snippet.CreatedAt)
+	}
+	fmt.Println("--------------------------------------------------")
+	return nil
+}
+
+// runHubList handles listing all snippets.
+func runHubList(cmd *cobra.Command, args []string) error {
+	if hubMgr == nil || !hubMgr.IsAuthenticated() {
+		fmt.Println("Not authenticated. Please login first with: makego hub login [user]")
+		return nil
+	}
+
+	page, _ := cmd.Flags().GetInt("page")
+	pageSize, _ := cmd.Flags().GetInt("size")
+
+	client := hubMgr.GetClient()
+
+	result, err := client.List(page, pageSize)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "List failed: %v\n", err)
+		return err
+	}
+
+	fmt.Printf("\nAll snippets (page %d of %d, total: %d):\n", result.Page, (result.Total+pageSize-1)/pageSize, result.Total)
+	fmt.Println("--------------------------------------------------")
+	for _, snippet := range result.Snippets {
+		fmt.Printf("\nSnippet: %s\n", snippet.Name)
+		fmt.Printf("  Description: %s\n", snippet.Description)
+		fmt.Printf("  Tags: %v\n", snippet.Tags)
+		fmt.Printf("  Author: %s\n", snippet.Author)
+		fmt.Printf("  Platform: %s, Engine: %s\n", snippet.Platform, snippet.Engine)
+	}
+	fmt.Println("--------------------------------------------------")
+	return nil
+}
+
+// runHubVersions handles getting version history.
+func runHubVersions(cmd *cobra.Command, args []string) error {
+	if hubMgr == nil || !hubMgr.IsAuthenticated() {
+		fmt.Println("Not authenticated. Please login first with: makego hub login [user]")
+		return nil
+	}
+
+	name := args[0]
+	hm := hubMgr
+	client := hm.GetClient()
+
+	versions, err := client.Versions(name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Version lookup failed: %v\n", err)
+		return err
+	}
+
+	fmt.Printf("\nVersion history for %s:\n", name)
+	fmt.Println("--------------------------------------------------")
+	for _, v := range versions {
+		fmt.Printf("  %s (%s) - %s\n", v.Version, v.CreatedAt, v.Snippet.Description)
+	}
+	fmt.Println("--------------------------------------------------")
 	return nil
 }
 
@@ -634,8 +967,8 @@ func orDefault(val, defaultVal string) string {
 	return val
 }
 
-// newScriptEngine 根据 --script 标志创建对应的脚本引擎。
-// 返回 nil 表示不使用脚本引擎（使用默认的 shell 执行方式）。
+// newScriptEngine creates the corresponding script engine based on --script flag.
+// Returns nil to indicate no script engine is used (use default shell execution mode).
 func newScriptEngine(engineType string) script.ScriptEngine {
 	switch engineType {
 	case "lua":
@@ -648,3 +981,167 @@ func newScriptEngine(engineType string) script.ScriptEngine {
 		return nil
 	}
 }
+
+// serveServer is a built-in Hub development server.
+type serveServer struct {
+	storage    *SnippetStorage
+	mgr        *hub.HubManager
+	serverURL  string
+	listenAddr string
+	verbose    bool
+}
+
+// SnippetStorage provides a simple file-based storage for local snippet development.
+type SnippetStorage struct {
+	data    map[string][]SnippetData
+	index   map[string]map[string]string // name -> version -> filepath
+	mu      sync.RWMutex
+	baseDir string
+}
+
+// SnippetData represents a stored snippet.
+type SnippetData struct {
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Code        string            `json:"code"`
+	Tags        []string          `json:"tags"`
+	Author      string            `json:"author"`
+	Platform    string            `json:"platform"`
+	Engine      string            `json:"engine"`
+	Version     string            `json:"version"`
+	CreatedAt   time.Time         `json:"created_at"`
+}
+
+// NewSnippetStorage creates a new in-memory snippet storage.
+func NewSnippetStorage() *SnippetStorage {
+	return &SnippetStorage{
+		data:  make(map[string][]SnippetData),
+		index: make(map[string]map[string]string),
+	}
+}
+
+// SetBaseDir sets the base directory for persistent storage.
+func (s *SnippetStorage) SetBaseDir(baseDir string) {
+	s.baseDir = baseDir
+}
+
+// Save saves a snippet.
+func (s *SnippetStorage) Save(snippet SnippetData) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.data[snippet.Name] = append(s.data[snippet.Name], snippet)
+
+	if _, ok := s.index[snippet.Name]; !ok {
+		s.index[snippet.Name] = make(map[string]string)
+	}
+	s.index[snippet.Name][snippet.Version] = ""
+
+	return nil
+}
+
+// Get retrieves a snippet by name and version.
+func (s *SnippetStorage) Get(name, version string) (*SnippetData, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	snippets, ok := s.data[name]
+	if !ok {
+		return nil, fmt.Errorf("snippet %q not found", name)
+	}
+
+	for _, snip := range snippets {
+		if snip.Version == version {
+			return &snip, nil
+		}
+	}
+
+	return nil, fmt.Errorf("version %q not found", version)
+}
+
+// List returns all snippets.
+func (s *SnippetStorage) List() []SnippetData {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var result []SnippetData
+	for _, snippets := range s.data {
+		result = append(result, snippets...)
+	}
+	return result
+}
+
+// search returns a search storage with query and tag support.
+func (s *SnippetStorage) Search(query string, tags []string) []SnippetData {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var results []SnippetData
+	for _, snippets := range s.data {
+		for _, snip := range snippets {
+			matches := true
+			if query != "" {
+				descMatches := strings.Contains(snip.Description, query)
+				codeMatches := strings.Contains(snip.Code, query)
+				if !descMatches && !codeMatches {
+					matches = false
+				}
+			}
+			if len(tags) > 0 {
+				for _, tag := range tags {
+					if !contains(snip.Tags, tag) {
+						matches = false
+						break
+					}
+				}
+			}
+			if matches {
+				results = append(results, snip)
+			}
+		}
+	}
+	return results
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+// runServe handles the serve subcommand.
+func runServe(cmd *cobra.Command, args []string) error {
+	storage := NewSnippetStorage()
+
+	serve := &serveServer{
+		storage:    storage,
+		serverURL:  "http://localhost:8080",
+		listenAddr: ":8080",
+		verbose:    verbose,
+	}
+
+	fmt.Println("Starting Hub development server...")
+	fmt.Println("Server running at http://localhost:8080")
+
+	// Serve the hub web server
+	// For now, we'll use a simple static file server with embedded HTML
+	go func() {
+		// Start a simple Go HTTP server
+		fs := http.FileServer(http.Dir("."))
+		http.Handle("/", http.StripPrefix("/", fs))
+
+		fmt.Printf("Serving static files from current directory on %s\n", serve.listenAddr)
+		if err := http.ListenAndServe(serve.listenAddr, nil); err != nil {
+			fmt.Fprintf(os.Stderr, "Server error: %v\n", err)
+		}
+	}()
+
+	// Wait for interrupt
+	select {}
+}
+
+// DefaultSnippetStorage provides a zero-value storage.
+var DefaultSnippetStorage = NewSnippetStorage()

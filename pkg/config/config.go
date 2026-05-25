@@ -8,12 +8,14 @@ import (
 
 // Config represents the full application configuration.
 type Config struct {
-	Hub      HubConfig      `toml:"hub"`
-	Compiler CompilerConfig `toml:"compiler"`
-	Script   ScriptConfig   `toml:"script"`
-	Runtime  RuntimeConfig  `toml:"runtime"`
-	Log      LogConfig      `toml:"log"`
-	Convert  ConvertConfig  `toml:"convert"`
+	Hub       HubConfig       `toml:"hub"`
+	Compiler  CompilerConfig  `toml:"compiler"`
+	Script    ScriptConfig    `toml:"script"`
+	Runtime   RuntimeConfig   `toml:"runtime"`
+	Log       LogConfig       `toml:"log"`
+	Convert    ConvertConfig   `toml:"convert"`
+	// HubManager will be set by the CLI (not in config file)
+	HubManager any `toml:"-"`
 }
 
 // HubConfig holds settings for the magego.hub.io API client.

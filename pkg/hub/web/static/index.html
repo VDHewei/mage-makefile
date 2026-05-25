@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MageHub - Snippet Manager</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+nav { background: #2c3e50; color: #fff; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+nav a { color: #ecf0f1; text-decoration: none; margin-left: 1.5rem; }
+nav a:hover { color: #fff; text-decoration: underline; }
+nav a.active { color: #3498db; font-weight: bold; }
+.container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+h1, h2 { margin-bottom: 1rem; }
+.card { background: #fff; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.card a { color: #2980b9; text-decoration: none; font-weight: 500; }
+.card a:hover { text-decoration: underline; }
+.card .meta { color: #7f8c8d; font-size: 0.85rem; margin-top: 0.5rem; }
+.card .tags span { background: #e8f4f8; color: #2980b9; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; margin-right: 4px; }
+.search-bar { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.search-bar input { flex: 1; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+.search-bar button, button.btn-primary { padding: 0.75rem 1.5rem; background: #3498db; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+.search-bar button:hover, button.btn-primary:hover { background: #2980b9; }
+form label { display: block; margin-bottom: 0.3rem; font-weight: 500; }
+form input, form textarea, form select { width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 0.8rem; font-family: inherit; }
+form textarea { min-height: 200px; font-family: monospace; }
+.hidden { display: none; }
+.error { color: #e74c3c; background: #fde8e8; padding: 0.5rem 1rem; border-radius: 6px; margin-bottom: 1rem; }
+.success { color: #27ae60; background: #e8fde8; padding: 0.5rem 1rem; border-radius: 6px; margin-bottom: 1rem; }
+pre.code-preview { background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.9rem; }
+.code-preview .line-num { color: #7f8c8d; user-select: none; margin-right: 1rem; }
+.back-link { color: #7f8c8d; margin-bottom: 1rem; display: inline-block; }
+.back-link:hover { color: #3498db; }
+#token-display { margin-top: 0.5rem; color: #27ae60; font-weight: 500; }
+</style>
+</head>
+<body>
+<nav>
+  <strong>MageHub</strong>
+  <div>
+    <a href="#" class="active" data-page="browse">Browse</a>
+    <a href="#" data-page="upload">Upload</a>
+    <a href="#" data-page="login">Login</a>
+    <a href="#" data-page="detail" class="hidden" id="detail-link">Detail</a>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- Browse page -->
+  <div id="page-browse">
+    <h1>Browse Snippets</h1>
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="Search snippets...">
+      <button onclick="doSearch()">Search</button>
+    </div>
+    <div id="browse-results"></div>
+  </div>
+
+  <!-- Detail page -->
+  <div id="page-detail" class="hidden">
+    <a href="#" class="back-link" onclick="showPage('browse')">&larr; Back</a>
+    <h1 id="detail-name"></h1>
+    <div class="card">
+      <div class="meta"><span id="detail-meta"></span></div>
+      <div class="tags" id="detail-tags" style="margin-top:0.5rem"></div>
+    </div>
+    <h2>Code</h2>
+    <pre class="code-preview" id="detail-code"></pre>
+  </div>
+
+  <!-- Upload page -->
+  <div id="page-upload" class="hidden">
+    <h1>Upload Snippet</h1>
+    <form id="upload-form">
+      <label>Name</label>
+      <input type="text" id="upload-name" placeholder="e.g. docker-build">
+      <label>Description</label>
+      <input type="text" id="upload-desc" placeholder="Short description">
+      <label>Tags (comma-separated)</label>
+      <input type="text" id="upload-tags" placeholder="e.g. docker, build, deploy">
+      <label>Platform</label>
+      <select id="upload-platform">
+        <option value="">All</option>
+        <option value="linux">Linux</option>
+        <option value="darwin">macOS</option>
+        <option value="windows">Windows</option>
+      </select>
+      <label>Engine</label>
+      <select id="upload-engine">
+        <option value="go">Go</option>
+        <option value="lua">Lua</option>
+        <option value="js">JavaScript</option>
+      </select>
+      <label>Code</label>
+      <textarea id="upload-code" placeholder="Paste your magefile.go code here..."></textarea>
+      <button type="submit" class="btn-primary">Upload</button>
+    </form>
+    <div id="upload-result"></div>
+  </div>
+
+  <!-- Login page -->
+  <div id="page-login" class="hidden">
+    <h1>Login</h1>
+    <form id="login-form">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="Username">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Password">
+      <button type="submit" class="btn-primary">Login</button>
+    </form>
+    <div id="login-result"></div>
+  </div>
+</div>
+
+<script>
+const API = '/api/v1';
+let currentToken = localStorage.getItem('hub_token') || '';
+
+// Navigation
+document.querySelectorAll('nav a[data-page]').forEach(a => {
+  a.addEventListener('click', e => { e.preventDefault(); showPage(e.target.dataset.page); });
+});
+
+function showPage(name) {
+  document.querySelectorAll('[id^="page-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('page-' + name).classList.remove('hidden');
+  document.querySelectorAll('nav a[data-page]').forEach(a => {
+    a.classList.toggle('active', a.dataset.page === name);
+  });
+  document.getElementById('detail-link').classList.toggle('hidden', name !== 'detail');
+}
+
+// Search
+async function doSearch() {
+  const q = document.getElementById('search-input').value;
+  const url = q ? `${API}/snippets/search?q=${encodeURIComponent(q)}` : `${API}/snippets`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const container = document.getElementById('browse-results');
+  if (!data.snippets || data.snippets.length === 0) {
+    container.innerHTML = '<p>No results found.</p>';
+    return;
+  }
+  container.innerHTML = data.snippets.map(s => `
+    <div class="card">
+      <a href="#" onclick="showSnippet('${s.name}'); return false;">${s.name}</a>
+      <div class="meta">${s.author || 'unknown'} · ${s.engine || 'go'} · ${s.platform || 'all'}</div>
+      <div class="tags">${(s.tags || []).map(t => '<span>' + t + '</span>').join('')}</div>
+    </div>
+  `).join('');
+}
+
+// Show snippet detail
+async function showSnippet(name) {
+  showPage('detail');
+  document.getElementById('detail-name').textContent = name;
+  document.getElementById('detail-code').textContent = 'Loading...';
+  const res = await fetch(`${API}/snippets/${name}`);
+  const s = await res.json();
+  document.getElementById('detail-meta').textContent = `${s.author || 'unknown'} · ${s.engine || 'go'} · ${s.platform || 'all'} · Updated: ${s.updated_at || 'N/A'}`;
+  document.getElementById('detail-tags').innerHTML = (s.tags || []).map(t => '<span>' + t + '</span>').join('');
+  document.getElementById('detail-code').textContent = s.code || '(no code)';
+}
+
+// Upload
+document.getElementById('upload-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = {
+    name: document.getElementById('upload-name').value,
+    description: document.getElementById('upload-desc').value,
+    tags: document.getElementById('upload-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+    platform: document.getElementById('upload-platform').value,
+    engine: document.getElementById('upload-engine').value,
+    code: document.getElementById('upload-code').value,
+  };
+  const headers = { 'Content-Type': 'application/json' };
+  if (currentToken) headers['Authorization'] = 'Bearer ' + currentToken;
+  const res = await fetch(`${API}/snippets`, { method: 'POST', headers, body: JSON.stringify(body) });
+  const data = await res.json();
+  const div = document.getElementById('upload-result');
+  if (res.ok) {
+    div.innerHTML = `<div class="success">Upload success: ${data.name}@${data.version}</div>`;
+  } else {
+    div.innerHTML = `<div class="error">${data.error || 'Upload failed'}</div>`;
+  }
+});
+
+// Login
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const res = await fetch(`${API}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: document.getElementById('login-user').value,
+      password: document.getElementById('login-pass').value,
+    }),
+  });
+  const data = await res.json();
+  const div = document.getElementById('login-result');
+  if (res.ok) {
+    currentToken = data.token;
+    localStorage.setItem('hub_token', data.token);
+    div.innerHTML = `<div class="success">Logged in as ${data.username}!<div id="token-display">Token: ${data.token}</div></div>`;
+  } else {
+    div.innerHTML = `<div class="error">${data.error || 'Login failed'}</div>`;
+  }
+});
+
+// Auto-refresh browse on load
+doSearch();
+</script>
+</body>
+</html>

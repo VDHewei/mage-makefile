@@ -1,146 +1,77 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
-  <defs>
-    <!-- Go blue gradient -->
-    <linearGradient id="goGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#00ADD8"/>
-      <stop offset="100%" style="stop-color:#006F8C"/>
-    </linearGradient>
-    <!-- Go lighter gradient -->
-    <linearGradient id="goLight" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#7FDBF0"/>
-      <stop offset="100%" style="stop-color:#00ADD8"/>
-    </linearGradient>
-    <!-- Makefile amber -->
-    <linearGradient id="mfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F4A261"/>
-      <stop offset="100%" style="stop-color:#E76F51"/>
-    </linearGradient>
-    <!-- Cross-platform rainbow -->
-    <linearGradient id="crossGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#2EC866"/>
-      <stop offset="50%" style="stop-color:#00ADD8"/>
-      <stop offset="100%" style="stop-color:#F4A261"/>
-    </linearGradient>
-  </defs>
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" width="300" height="200">
   <!-- Background: dark rounded card -->
-  <rect x="4" y="4" width="392" height="192" rx="20" ry="20" fill="#1a1a2e" stroke="url(#goGrad)" stroke-width="2"/>
+  <rect x="3" y="3" width="294" height="194" rx="24" ry="24" fill="#1a1a2e" stroke="#00ADD8" stroke-width="2"/>
 
-  <!-- ==================== LEFT SIDE: Makefile icon ==================== -->
-  <g transform="translate(28, 40)">
-    <!-- Sheet of paper -->
-    <rect x="0" y="0" width="56" height="72" rx="4" fill="#2a2a4e" stroke="url(#mfGrad)" stroke-width="1.5"/>
-    <!-- Fold corner -->
-    <path d="M42,0 L42,14 L56,14" fill="#1a1a2e" stroke="url(#mfGrad)" stroke-width="1"/>
-    <!-- Text lines -->
-    <rect x="8" y="22" width="36" height="3" rx="1.5" fill="#F4A261" opacity="0.85"/>
-    <rect x="8" y="30" width="40" height="3" rx="1.5" fill="#E9C46A" opacity="0.7"/>
-    <rect x="8" y="38" width="26" height="3" rx="1.5" fill="#F4A261" opacity="0.6"/>
-    <rect x="8" y="48" width="38" height="3" rx="1.5" fill="#E9C46A" opacity="0.7"/>
-    <rect x="8" y="56" width="20" height="3" rx="1.5" fill="#F4A261" opacity="0.55"/>
-    <!-- Target circle -->
-    <circle cx="28" cy="76" r="4" fill="#F4A261" opacity="0.9"/>
-  </g>
+  <!-- === Cute Mole Character === -->
+  <g transform="translate(30, 20)">
+    <!-- Body: rounded pear shape -->
+    <path d="M15,38 C5,38 0,52 0,68 C0,82 8,92 15,95 L130,95 C137,92 145,82 145,68 C145,52 140,38 130,38 Z" fill="#00ADD8"/>
 
-  <!-- ==================== CENTER: Arrow ==================== -->
-  <g transform="translate(106, 64)">
-    <line x1="0" y1="24" x2="48" y2="24" stroke="url(#crossGrad)" stroke-width="3" stroke-linecap="round"/>
-    <polygon points="48,16 60,24 48,32" fill="url(#crossGrad)" opacity="0.95"/>
-    <!-- Sparkle dots -->
-    <circle cx="12" cy="20" r="2.2" fill="#00ADD8" opacity="0.65"/>
-    <circle cx="28" cy="28" r="1.8" fill="#2EC866" opacity="0.65"/>
-    <circle cx="40" cy="20" r="2" fill="#F4A261" opacity="0.65"/>
-  </g>
+    <!-- Belly patch: lighter color -->
+    <path d="M12,48 C6,48 2,58 2,68 C2,78 8,86 12,89 L128,89 C132,86 138,78 138,68 C138,58 134,48 128,48 Z" fill="#7FDBF0" opacity="0.35"/>
 
-  <!-- ==================== RIGHT SIDE: Go Gopher (土拨鼠) ==================== -->
-  <g transform="translate(174, 22)">
-    <!-- === Body === -->
-    <!-- Main body (pear-shaped, wider at bottom) -->
-    <path d="M36,52 C20,52 8,68 8,86 C8,104 16,116 36,118 L56,118 C76,116 84,104 84,86 C84,68 72,52 56,52 Z" fill="url(#goGrad)"/>
-    <!-- Belly lighter patch -->
-    <path d="M32,68 C24,68 18,78 18,90 C18,102 24,110 32,112 L60,112 C68,110 74,102 74,90 C74,78 68,68 60,68 Z" fill="url(#goLight)" opacity="0.35"/>
+    <!-- Head: round and cute -->
+    <ellipse cx="70" cy="28" rx="38" ry="26" fill="#00ADD8"/>
 
-    <!-- === Head === -->
-    <!-- Head shape (round, slightly wider at top) -->
-    <ellipse cx="46" cy="32" rx="26" ry="22" fill="url(#goGrad)"/>
+    <!-- Ears: small rounded triangles -->
+    <path d="M32,12 C26,2 34,-4 44,10 Z" fill="#006F8C"/>
+    <path d="M108,12 C114,2 106,-4 96,10 Z" fill="#006F8C"/>
+    <!-- Ear inner -->
+    <path d="M34,10 C30,2 36,0 41,8 Z" fill="#7FDBF0" opacity="0.4"/>
+    <path d="M106,10 C110,2 104,0 99,8 Z" fill="#7FDBF0" opacity="0.4"/>
 
-    <!-- === Ears (small rounded triangles on top) === -->
-    <path d="M28,18 C24,6 32,2 38,14 Z" fill="#006F8C"/>
-    <path d="M64,18 C68,6 60,2 54,14 Z" fill="#006F8C"/>
-    <!-- Inner ear -->
-    <path d="M30,16 C28,8 33,6 37,14 Z" fill="#7FDBF0" opacity="0.5"/>
-    <path d="M62,16 C64,8 59,6 55,14 Z" fill="#7FDBF0" opacity="0.5"/>
-
-    <!-- === Eyes (big, googly Go style) === -->
+    <!-- Eyes: big, cute, expressive -->
     <!-- Left eye -->
-    <ellipse cx="36" cy="28" rx="7" ry="7" fill="white"/>
-    <circle cx="37" cy="27" r="4" fill="#1a1a2e"/>
-    <circle cx="38.5" cy="25.5" r="1.5" fill="white"/>
+    <ellipse cx="54" cy="24" rx="10" ry="10" fill="white"/>
+    <circle cx="57" cy="23" r="6" fill="#1a1a2e"/>
+    <!-- Eye highlight -->
+    <ellipse cx="52" cy="21" rx="2.5" ry="2.2" fill="white"/>
+
     <!-- Right eye -->
-    <ellipse cx="56" cy="28" rx="7" ry="7" fill="white"/>
-    <circle cx="57" cy="27" r="4" fill="#1a1a2e"/>
-    <circle cx="58.5" cy="25.5" r="1.5" fill="white"/>
+    <ellipse cx="86" cy="24" rx="10" ry="10" fill="white"/>
+    <circle cx="89" cy="23" r="6" fill="#1a1a2e"/>
+    <!-- Eye highlight -->
+    <ellipse cx="84" cy="21" rx="2.5" ry="2.2" fill="white"/>
 
-    <!-- === Nose (small oval) === -->
-    <ellipse cx="46" cy="35" rx="4" ry="2.5" fill="#1a1a2e"/>
+    <!-- Nose: cute oval -->
+    <ellipse cx="70" cy="32" rx="4.5" ry="2.5" fill="#1a1a2e"/>
 
-    <!-- === Mouth / Smile === -->
-    <path d="M40,39 Q46,44 52,39" fill="none" stroke="#1a1a2e" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Mouth: happy smile -->
+    <path d="M62,37 Q70,44 78,37" fill="none" stroke="#1a1a2e" stroke-width="1.8" stroke-linecap="round"/>
 
-    <!-- === Cheek blush === -->
-    <ellipse cx="28" cy="35" rx="5" ry="3" fill="#00ADD8" opacity="0.2"/>
-    <ellipse cx="64" cy="35" rx="5" ry="3" fill="#00ADD8" opacity="0.2"/>
+    <!-- Blush: cute pink cheeks -->
+    <ellipse cx="46" cy="34" rx="5.5" ry="3" fill="#FF6B6B" opacity="0.25"/>
+    <ellipse cx="94" cy="34" rx="5.5" ry="3" fill="#FF6B6B" opacity="0.25"/>
 
-    <!-- === Arms === -->
-    <!-- Left arm (waving) -->
-    <path d="M16,70 C4,64 2,54 6,48" fill="none" stroke="url(#goGrad)" stroke-width="7" stroke-linecap="round"/>
-    <!-- Right arm (holding a small document) -->
-    <path d="M76,70 C88,66 90,58 86,52" fill="none" stroke="url(#goGrad)" stroke-width="7" stroke-linecap="round"/>
-    <!-- Small paper in right hand -->
-    <rect x="80" y="46" width="14" height="18" rx="1.5" fill="#2a2a4e" stroke="#00ADD8" stroke-width="1"/>
-    <rect x="83" y="50" width="8" height="2" rx="1" fill="#00ADD8" opacity="0.6"/>
-    <rect x="83" y="55" width="8" height="2" rx="1" fill="#00ADD8" opacity="0.4"/>
+    <!-- Arm: left arm reaching up (excited) -->
+    <path d="M5,58 C-8,54 -10,42 -4,38" fill="none" stroke="#00ADD8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
 
-    <!-- === Feet === -->
-    <ellipse cx="28" cy="120" rx="12" ry="5" fill="#006F8C"/>
-    <ellipse cx="64" cy="120" rx="12" ry="5" fill="#006F8C"/>
+    <!-- Arm: right arm holding a small Go badge -->
+    <path d="M135,58 C148,54 150,42 144,38" fill="none" stroke="#00ADD8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Go badge: simple G logo -->
+    <g transform="translate(138, 36)">
+      <!-- Badge background -->
+      <rect x="0" y="0" width="24" height="20" rx="3" fill="#2a2a4e" stroke="#00ADD8" stroke-width="1.5"/>
+      <!-- Go G logo -->
+      <text x="12" y="14" font-family="serif, Georgia" font-size="12" font-weight="bold" fill="#00ADD8" text-anchor="middle" letter-spacing="-0.5">G</text>
+    </g>
+
+    <!-- Feet: small rounded -->
+    <ellipse cx="36" cy="95" rx="9" ry="4" fill="#006F8C"/>
+    <ellipse cx="104" cy="95" rx="9" ry="4" fill="#006F8C"/>
   </g>
 
-  <!-- ==================== BOTTOM: Cross-platform icons ==================== -->
-  <g transform="translate(30, 140)">
-    <!-- Windows -->
-    <g opacity="0.8">
-      <rect x="0" y="0" width="5" height="14" fill="#2EC866" rx="1"/>
-      <rect x="6" y="0" width="5" height="14" fill="#2EC866" rx="1"/>
-      <rect x="0" y="0" width="11" height="6" fill="#2EC866" rx="1"/>
-      <rect x="0" y="8" width="11" height="6" fill="#2EC866" rx="1"/>
-    </g>
-    <text x="22" y="13" font-family="monospace" font-size="14" fill="#E9C46A" text-anchor="middle" font-weight="bold">+</text>
-
-    <!-- Apple -->
-    <g opacity="0.8">
-      <ellipse cx="36" cy="7" rx="5" ry="3" fill="#00ADD8" transform="rotate(-25 36 7)"/>
-      <line x1="36" y1="4" x2="36" y2="0" stroke="#00ADD8" stroke-width="2.5" stroke-linecap="round"/>
-    </g>
-    <text x="50" y="13" font-family="monospace" font-size="14" fill="#E9C46A" text-anchor="middle" font-weight="bold">+</text>
-
-    <!-- Linux/Tux -->
-    <g opacity="0.8">
-      <ellipse cx="62" cy="7" rx="6" ry="7" fill="#F4A261"/>
-      <line x1="62" y1="2" x2="62" y2="14" stroke="#1a1a2e" stroke-width="1" opacity="0.5"/>
-      <circle cx="60" cy="6" r="1.2" fill="#1a1a2e" opacity="0.5"/>
-      <circle cx="64" cy="6" r="1.2" fill="#1a1a2e" opacity="0.5"/>
-    </g>
-
-    <!-- "mage" label -->
-    <text x="110" y="12" font-family="monospace, 'Courier New'" font-size="20" font-weight="bold"
-          fill="url(#goGrad)" letter-spacing="1">mage</text>
-  </g>
-
-  <!-- ==================== Bottom subtitle ==================== -->
-  <text x="200" y="178" font-family="monospace, 'Courier New'" font-size="12" font-weight="bold"
-        fill="#5a5a7e" text-anchor="middle" letter-spacing="2.5">MAKEGO</text>
-  <text x="200" y="192" font-family="sans-serif" font-size="8.5" fill="#4a4a6e" text-anchor="middle" letter-spacing="1.5">
-    Makefile → Go • Cross-Platform
+  <!-- === Project Name === -->
+  <text x="150" y="168" font-family="monospace, 'Courier New', sans-serif" font-size="16" font-weight="bold"
+        fill="#F4A261" text-anchor="middle" letter-spacing="1">magego</text>
+  <text x="150" y="185" font-family="sans-serif" font-size="10" fill="#8a8aab" text-anchor="middle" letter-spacing="2.5">
+    Makefile → magefile
   </text>
+
+  <!-- === Decorative Elements === -->
+  <!-- Sparkles/stars around the character -->
+  <circle cx="25" cy="55" r="2.5" fill="#2EC866" opacity="0.6"/>
+  <circle cx="270" cy="50" r="1.8" fill="#F4A261" opacity="0.6"/>
+  <circle cx="90" cy="180" r="2.2" fill="#00ADD8" opacity="0.55"/>
+  <circle cx="205" cy="182" r="1.5" fill="#2EC866" opacity="0.5"/>
 </svg>
